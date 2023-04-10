@@ -107,7 +107,7 @@ function ppc_ecdf_overlay_grouped(y, yrep, group;
                                   size = 0.25,
                                   alpha = 0.7)
 
-    data = ppc_data(y, yrep, group = group) # You should have ppc_data function implemented
+    data = ppc_data(y, yrep, group = group)
     p_overlay = ppc_ecdf_overlay(y, yrep, discrete = discrete, pad = pad, size = size, alpha = alpha)
 
     plot(p_overlay,
@@ -128,8 +128,7 @@ function ppc_dens(y, yrep;
                   size = 0.5,
                   alpha = 1)
 
-    data = ppc_data(y, yrep) # You should have ppc_data function implemented
-
+    data = ppc_data(y, yrep)
     plot(data,
          layer(x = :value, color = :is_y_label, Geom.density, Theme(line_width = size, alphas = [alpha])),
          Coord.cartesian(ymin = nothing),
@@ -190,7 +189,7 @@ function ppc_freqpoly(y, yrep;
                       alpha = 1,
                       group = nothing)
 
-    data = ppc_data(y, yrep, group = group) # You should have ppc_data function implemented
+    data = ppc_data(y, yrep, group = group) 
 
     if binwidth === nothing
         binwidth = Gadfly.default_discretizer(:value, data) # For automatic bin width calculation
@@ -216,8 +215,7 @@ function ppc_freqpoly_grouped(y, yrep, group;
                               size = 0.5,
                               alpha = 1)
 
-    data = ppc_data(y, yrep, group = group) # You should have ppc_data function implemented
-
+    data = ppc_data(y, yrep, group = group) 
     if binwidth === nothing
         binwidth = Gadfly.default_discretizer(:value, data) # For automatic bin width calculation
     end
@@ -243,8 +241,7 @@ function ppc_boxplot(y, yrep;
                      size = 0.5,
                      alpha = 1)
 
-    data = ppc_data(y, yrep) # You should have ppc_data function implemented
-
+    data = ppc_data(y, yrep) 
     plot(data,
          x = :rep_label,
          y = :value,
