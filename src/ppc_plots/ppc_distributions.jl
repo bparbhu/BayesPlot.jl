@@ -6,6 +6,8 @@ using StatsBase
 using KernelDensity, Distributions
 using DataFramesMeta, Statistics
 
+include("ppc_helpers.jl")
+
 
 
 function ppc_data(y::Vector, yrep::Matrix, group::Union{Vector, Nothing}=nothing)
