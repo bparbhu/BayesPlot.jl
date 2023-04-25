@@ -18,6 +18,86 @@ function color_scheme_set(scheme="blue")
 end
 
 
+function full_level_name(x::String)
+    map = Dict(
+        "l" => "light",
+        "lh" => "light_highlight",
+        "m" => "mid",
+        "mh" => "mid_highlight",
+        "d" => "dark",
+        "dh" => "dark_highlight",
+        "light" => "light",
+        "light_highlight" => "light_highlight",
+        "mid" => "mid",
+        "mid_highlight" => "mid_highlight",
+        "dark" => "dark",
+        "dark_highlight" => "dark_highlight"
+    )
+    return map[x]
+end
+
+
+function mixed_scheme(scheme1::String, scheme2::String)
+    scheme1 = color_scheme_get(scheme1)
+    scheme2 = color_scheme_get(scheme2)
+    scheme = Dict(
+        "light" => scheme1["light"],
+        "light_highlight" => scheme2["light_highlight"],
+        "mid" => scheme2["mid"],
+        "mid_highlight" => scheme1["mid_highlight"],
+        "dark" => scheme1["dark"],
+        "dark_highlight" => scheme2["dark_highlight"]
+    )
+    return scheme
+end
+
+
+function is_mixed_scheme(x::Dict{String,Colorant})
+    return haskey(x, "mixed") && x["mixed"]
+end
+
+
+function scheme_level_names()
+    return ["light", "light_highlight", "mid", "mid_highlight", "dark", "dark_highlight"]
+end
+
+
+function plot_scheme(scheme::String)
+    if scheme === nothing
+        x = color_scheme_get()
+    else
+        x = color_scheme_get(scheme)
+    end
+
+    color_data = DataFrame(
+        name = repeat([scheme], length(x)),
+        group = scheme_level_names(),
+        value = ones(length(x))
+    )
+
+    plot(color_data, x=:name, y=:value, color=:group, Geom.bar,
+         Scale.color_discrete_manual(values=values(x)...),
+         Theme(bar_spacing=0.5, panel_fill=colorant"white",
+               default_color=colorant"white", grid_line_width=0.1))
+end
+
+
+function color_scheme_view(schemes::Array{String,1})
+    plots = [plot_scheme(scheme) for scheme in schemes]
+    hstack(plots...)
+end
+
+
+function get_color(levels::Union{String, Array{String,1}})
+    levels = full_level_name(levels)
+    if !all([level ∈ scheme_level_names() for level in levels])
+        throw(ArgumentError("All levels must be in scheme_level_names()"))
+    end
+    color_vals = color_scheme_get()
+    return [color_vals[level] for level in levels]
+end
+
+
 function is_hex_color(color::String)
     if startswith(color, "#") && length(color) == 7
         try
@@ -59,6 +139,29 @@ end
 function get_brewer_scheme(name::String)
     scheme = ColorSchemes.get(ColorSchemes.brewer_colors, name)
     return scheme.colors
+end
+
+
+function color_scheme_get(scheme::Union{Nothing, String}=nothing, i::Union{Nothing, String, Array{Int,1}}=nothing)
+    if !isnothing(scheme)
+        scheme = scheme_from_string(scheme)
+    else
+        x = getfield.(Ref(bayesplot_aesthetics), "scheme")
+        scheme = Dict(scheme_level_names() .=> getfield.(Ref(x), scheme_level_names()))
+        setfield!(x, :mixed, getfield(x, :mixed))
+        setfield!(x, :scheme_name, getfield(x, :scheme_name))
+    end
+
+    if isnothing(i)
+        return scheme
+    elseif isa(i, String)
+        return get_color([i])
+    end
+
+    if !all([idx ∈ 1:length(scheme) for idx in i]) || length(unique(i)) != length(i)
+        throw(ArgumentError("All indices must be in range and unique"))
+    end
+    return [scheme[idx] for idx in i]
 end
 
 
@@ -113,6 +216,16 @@ master_color_list = Dict(
 
 mutable struct BayesplotAesthetics
     scheme::Dict
+end
+
+
+function get_color(levels::Array{String,1})
+    levels = [full_level_name(level) for level in levels]
+    if !all([level ∈ scheme_level_names() for level in levels])
+        throw(ArgumentError("All levels must be in scheme_level_names()"))
+    end
+    color_vals = color_scheme_get()
+    return [color_vals[level] for level in levels]
 end
 
 
