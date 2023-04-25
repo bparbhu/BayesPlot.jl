@@ -25,3 +25,21 @@ using Gadfly
     end
 
 end
+
+function bin_errors(y_obs, y_rep, bins=30)
+    err <- y_obs .- y_rep
+    se2 <- (err .- mean(err, dims=1)).^2
+    n <- size(y_rep, 1)
+    Ey <- mean(y_rep, dims=1)
+    
+    binned <- StatsBase.cut(Ey, bins=bins)
+    err_bar <- DataFrames.by(binned, :Ey, :Ey => (x -> mean(x.err)) => :err_bar)
+    ey_bar <- DataFrames.by(binned, :Ey, :Ey => (x -> mean(x.Ey)) => :ey_bar)
+    se2_bar <- DataFrames.by(binned, :Ey, :Ey => (x -> sum(x.se2) / n) => :se2)
+    
+    return DataFrame(ey_bar = ey_bar.ey_bar, err_bar = err_bar.err_bar, se2 = se2_bar.se2, bin = 1:length(ey_bar.ey_bar))
+end
+
+function expect_gadfly(plot)
+    @test isa(plot, Gadfly.Plot)
+end
