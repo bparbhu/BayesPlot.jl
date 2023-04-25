@@ -1,5 +1,6 @@
 using Gadfly, DataFrames, Colors, ColorSchemes
 
+
 function color_scheme_set(scheme="blue")
     if !(typeof(scheme) <: AbstractString)
         throw(ArgumentError("scheme should be a string of length 1 or a vector of length 6."))
@@ -59,6 +60,7 @@ function get_brewer_scheme(name::String)
     scheme = ColorSchemes.get(ColorSchemes.brewer_colors, name)
     return scheme.colors
 end
+
 
 function scheme_from_string(scheme::String)
     if startswith(scheme, "mix-")
