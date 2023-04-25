@@ -98,6 +98,22 @@ function get_color(levels::Union{String, Array{String,1}})
 end
 
 
+function print_bayesplot_scheme(x::Dict{String,String})
+    tab = DataFrame(hex_color = collect(values(x)))
+    scheme_name = get(x, "scheme_name", "hex_color")
+    println(tab)
+end
+
+
+function plot_bayesplot_scheme(x::Dict{String,String})
+    scheme_name = get(x, "scheme_name", nothing)
+    if scheme_name === nothing
+        throw(ArgumentError("Scheme name not found."))
+    end
+    plot_scheme(scheme_name)
+end
+
+
 function is_hex_color(color::String)
     if startswith(color, "#") && length(color) == 7
         try
