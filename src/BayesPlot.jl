@@ -1,5 +1,10 @@
 module BayesPlot
 
-greet() = print("Hello World!")
+include("helpers/")
+include("ppc_plots/")
+include("ppd_plots/")
+include("mcmc_plots/")
+
+export
 
 end # module
