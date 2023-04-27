@@ -18,8 +18,6 @@ function modify_aes(mapping; kwargs...)
 end
 
 
-using Gadfly, DataFrames
-
 function facet_wrap_parsed(; kwargs...)
     return facet_wrap(; kwargs..., labeller = label_parsed)
 end
