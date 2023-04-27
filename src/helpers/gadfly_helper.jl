@@ -1,5 +1,6 @@
 using Gadfly, DataFrames
 
+
 function Geom_ignore(; kwargs...)
     return Geom.blank(
         mapping=nothing, data=nothing,
@@ -7,8 +8,6 @@ function Geom_ignore(; kwargs...)
     )
 end
 
-
-using Gadfly, DataFrames
 
 function modify_aes_(mapping; kwargs...)
     return merge(mapping, aes(; kwargs...))
