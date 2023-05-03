@@ -25,7 +25,6 @@ function ppd_dens_overlay(ypred;
 
     data = ppd_data(ypred)
 
-    # Note: You will need to define the following custom functions in Julia:
     # overlay_ppd_densities, scale_color_ppd, get_color, bayesplot_theme_get, 
     # dont_expand_axes, yaxis_title, xaxis_title, yaxis_text, yaxis_ticks, and legend_none
 
