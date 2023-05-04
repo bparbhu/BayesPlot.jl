@@ -54,9 +54,3 @@ end
 
     Random.seed!()
 end
-
-# Tests for get_interpolation_values are omitted because
-# this function was not provided in previous questions.
-
-# Tests for ecdf_intervals are omitted because
-# this function was not provided in previous questions.
