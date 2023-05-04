@@ -38,8 +38,6 @@ end
     @test sort(names(d)) == sorted_names
 end
 
-# Tests for is_whole_number and all_counts are omitted because
-# these functions were not provided in previous questions.
 
 @testset "adjust_gamma works with different adjustment methods" begin
     Random.seed!(8420)
