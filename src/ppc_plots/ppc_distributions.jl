@@ -7,23 +7,19 @@ using KernelDensity, Distributions
 using DataFramesMeta, Statistics
 
 include("ppc_helpers.jl")
+include("ppd_distributions.jl")
 
 
-
-function ppc_data(y::Vector, yrep::Matrix, group::Union{Vector, Nothing}=nothing)
-    n = length(y)
-    m = size(yrep, 1)
-    
-    if group === nothing
-        df = DataFrame(y=repeat(y, outer=m), yrep=vec(yrep))
-    else 
-        if length(group) != n
-            throw(ArgumentError("Length of group must match the length of y"))
-        end
-        df = DataFrame(y=repeat(y, outer=m), yrep=vec(yrep), group=repeat(group, outer=m))
+function ppc_data(y, yrep, group = nothing)
+    y = validate_y(y)
+    N = length(y)
+    yrep = validate_predictions(yrep, N)
+    if !isnothing(group)
+        group = validate_group(group, N)
     end
-    return df
+    return ppd_data(predictions = yrep, y = y, group = group)
 end
+
 
 
 function ppc_dens_overlay(y,
@@ -39,7 +35,10 @@ function ppc_dens_overlay(y,
     data = ppc_data(y, yrep) 
 
     yrep_densities = layer(data, x = :value, group = :rep_id, Geom.density, Theme(line_width = size, default_color = "red", alphas = [alpha]), Stat.density(bandwidth = bw, adjust = adjust, kernel = kernel, n = n_dens))
-    y_densities = layer(data[data.is_y, :], x = :value, Geom.density, Theme(line_width = 1, default_color = "blue", alphas = [alpha]), Stat.density(bandwidth = bw, adjust = adjust, kernel = kernel, n = n_dens))
+    y_densities = layer(data[data.is_y, :], 
+                        x = :value, Geom.density, Theme(line_width = 1, 
+                        default_color = "blue", alphas = [alpha]), 
+                        Stat.density(bandwidth = bw, adjust = adjust, kernel = kernel, n = n_dens))
 
     p = plot(yrep_densities, y_densities,
              Coord.cartesian(ymax = nothing),
@@ -233,7 +232,7 @@ function ppc_freqpoly_grouped(y, yrep, group;
          Scale.color_discrete_manual("red", "blue"),
          Guide.colorkey(""),
          Coord.cartesian(aspect_ratio = "auto"),
-         facet_grid(:is_y_label .~ :group)
+         Geom.subplot_grid(:is_y_label .~ :group)
     )
 end
 
@@ -433,7 +432,7 @@ function ppc_pit_ecdf_grouped(y, yrep, group;
              Guide.xlabel(""),
              Guide.xticks(ticks=nothing),
              plot_theme,
-             Guide.facet_grid("group", "free", ""),
+             Geom.subplot_grid(Geom.step),
              Coord.Cartesian(xmax=1)
              )
 
