@@ -5,6 +5,26 @@ using StatsBase
 using Distributions
 
 
+function validate_group(group, n_obs)
+    # sanity checks
+    @assert (isa(group, AbstractVector) || isa(group, CategoricalArray)) && (length(n_obs) == 1) && (n_obs == trunc(Int, n_obs))
+
+    if !isa(group, CategoricalArray)
+        group = categorical(group)
+    end
+
+    if any(ismissing, group)
+        throw("NAs not allowed in 'group'.")
+    end
+
+    if length(group) != n_obs
+        throw("length(group) must be equal to the number of observations.")
+    end
+
+    return group
+end
+
+
 
 function is_vector_or_1Darray(x)
     return isa(x, Vector) && !isa(x, Dict)
@@ -209,34 +229,29 @@ end
 
 function get_interpolation_values(N, K, L, prob, gamma_adj)
     for dim in ["L", "prob"]
-        if all(getfield(Main, Symbol(dim)) != gamma_adj[!, Symbol(dim)])
-            @error("No precomputed values to interpolate from for $dim = $(getfield(Main, Symbol(dim))).
-                    Values of $dim available for interpolation: $(unique(gamma_adj[!, Symbol(dim)]))")
+        if !(get(dim) in gamma_adj[dim])
+            error("No precomputed values to interpolate from for $dim = $(get(dim)). \n" *
+                  "Values of $dim available for interpolation: $(join(unique(gamma_adj[dim]), ", ")).")
         end
     end
-    
-    vals = gamma_adj[(gamma_adj.L .== L) .& (gamma_adj.prob .== prob), :]
-    
+    vals = gamma_adj[gamma_adj.L .== L .& gamma_adj.prob .== prob, :]
+
     if N > maximum(vals.N)
-        @error("No precomputed values to interpolate from for sample length of $N.
-                Please use a subsample of length $(maximum(vals.N)) or smaller, or consider setting 'interpolate_adj' = FALSE.")
+        error("No precomputed values to interpolate from for sample length of $N. \n" *
+              "Please use a subsample of length $(maximum(vals.N)) or smaller, or consider setting 'interpolate_adj' = FALSE.")
     end
-    
     if N < minimum(vals.N)
-        @error("No precomputed values to interpolate from for sample length of $N.
-                Please use a subsample of length $(minimum(vals.N)) or larger, or consider setting 'interpolate_adj' = FALSE.")
+        error("No precomputed values to interpolate from for sample length of $N. \n" *
+              "Please use a subsample of length $(minimum(vals.N)) or larger, or consider setting 'interpolate_adj' = FALSE.")
     end
-    
-    if K > maximum(vals[vals.N .<= N, :K])
-        @error("No precomputed values available for interpolation for K = $K.
-                Try either setting a value of K <= $(maximum(vals[vals.N .<= N, :K])) or 'interpolate_adj' = FALSE.")
+    if K > maximum(vals[vals.N .<= N, :].K)
+        error("No precomputed values available for interpolation for 'K' = $K. \n" *
+              "Try either setting a value of 'K' <= $(maximum(vals[vals.N .<= N, :].K)) or 'interpolate_adj' = FALSE.")
     end
-    
-    if K < minimum(vals[vals.N .<= N, :K])
-        @error("No precomputed values available for interpolation for K = $K.
-                Try either setting a value of K >= $(minimum(vals[vals.N .<= N, :K])) or 'interpolate_adj' = FALSE.")
+    if K < minimum(vals[vals.N .<= N, :].K)
+        error("No precomputed values available for interpolation for 'K' = $K. \n" *
+              "Try either setting a value of 'K' >= $(minimum(vals[vals.N .<= N, :].K)) or 'interpolate_adj' = FALSE.")
     end
-    
     return vals
 end
 
@@ -307,6 +322,7 @@ end
 function create_rep_ids(ids)
     return "italic(y)[rep] ($(ids))"
 end
+
 
 y_label() = "italic(y)"
 yrep_label() = "italic(y)[rep]"
