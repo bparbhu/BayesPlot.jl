@@ -6,7 +6,7 @@ using StatsBase
 using KernelDensity, Distributions
 using DataFramesMeta, Statistics
 
-include("ppc_helpers.jl")
+include("helpers/ppc_helpers.jl")
 include("ppd_distributions.jl")
 
 
