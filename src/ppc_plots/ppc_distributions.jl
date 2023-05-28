@@ -268,72 +268,29 @@ function ppc_violin_grouped(y, yrep, group;
                             y_size = 1,
                             y_alpha = 1,
                             y_jitter = 0.1)
-
-    y_draw = lowercase(y_draw)
+    y_draw = match(y_draw, ["violin", "points", "both"])
     y_violin = y_draw in ["violin", "both"]
     y_points = y_draw in ["points", "both"]
 
     data = ppc_data(y, yrep, group)
 
-    plot_theme = Theme(
-        panel_fill=colorant"white",
-        default_color=colorant"deepskyblue"
-    )
-
-    violin_y_layer = layer(
-        data[data.is_y, :],
-        x=:group,
-        y=:value,
-        Geom.violin,
-        Theme(
-            default_color=colorant"steelblue",
-            alpha=y_alpha,
-            key_title_color=colorant"white"
-        )
-    )
-
-    jitter_y_layer = layer(
-        data[data.is_y, :],
-        x=:group,
-        y=:value,
-        Geom.point,
-        Theme(
-            default_point_size=y_size,
-            default_color=colorant"steelblue",
-            key_title_color=colorant"white"
-        )
-    )
-
-    violin_yrep_layer = layer(
-        data[.!data.is_y, :],
-        x=:group,
-        y=:value,
-        Geom.violin,
-        Theme(
-            default_color=colorant"lightskyblue",
-            alpha=alpha,
-            key_title_color=colorant"white"
-        )
-    )
-
-    layers = []
+    p = plot(data, xgroup=:group, x=:value, Geom.subplot_grid(Geom.violin))
+    
     if y_violin
-        push!(layers, violin_y_layer)
+        p = plot!(p, data[.!data.is_y, :], color=:yrep, alpha=alpha, linewidth=size)
     end
+    
     if y_points
-        push!(layers, jitter_y_layer)
+        p = plot!(p, data[data.is_y, :], Geom.jitter, shape=21, alpha=y_alpha, size=y_size, width=y_jitter, height=0)
     end
 
-    push!(layers, violin_yrep_layer)
+    # Apply the color schemes here if available.
 
-    p = plot(
-        layers...,
-        Coord.Cartesian(ymax = maximum(data.value)),
-        plot_theme,
-        Guide.ylabel(""),
-        Guide.xlabel("")
-    )
-
+    p = Coord.Cartesian(xmin=0.1, xmax=0.9)
+    p = Guide.title("PPC Violin Plot")
+    p = Guide.ylabel("y")
+    p = Guide.xlabel("group")
+    
     return p
 end
 
@@ -344,7 +301,6 @@ function ppc_pit_ecdf(y, yrep;
                       prob = 0.99,
                       plot_diff = false,
                       interpolate_adj = nothing)
-
     if isnothing(pit)
         data = ppc_data(y, yrep)
         pit = [mean(row.value[row.is_y] .>= row.value[.!row.is_y]) for row in groupby(data, :y_id)]
@@ -352,36 +308,44 @@ function ppc_pit_ecdf(y, yrep;
             K = min(length(unique(data.rep_id)) + 1, length(pit))
         end
     else
-        # Validate pit if necessary
+        # Inform pit specified so ignoring y, and yrep if specified
+        pit = validate_pit(pit)
         if isnothing(K)
             K = length(pit)
         end
     end
     N = length(pit)
+    gamma = adjust_gamma(
+        N = N,
+        K = K,
+        prob = prob,
+        interpolate_adj = interpolate_adj
+    )
+    lims = ecdf_intervals(gamma = gamma, N = N, K = K)
 
-    gamma = adjust_gamma(N, K, prob, interpolate_adj)
-    lims = ecdf_intervals(gamma, N, K)
-
-    plot_theme = Theme(
-        panel_fill=colorant"white",
-        default_color=colorant"deepskyblue"
+    df = DataFrame(
+        x = 1:K ./ K,
+        y = ecdf(pit).(range(0, 1, length = K)) - (plot_diff == true) .* 1:K ./ K,
+        color = repeat(["y"], K),
+        lims_upper = lims.upper[2:end] ./ N - (plot_diff == true) .* 1:K ./ K,
+        lims_lower = lims.lower[2:end] ./ N - (plot_diff == true) .* 1:K ./ K
     )
 
-    y_values = ecdf(pit).(collect(1:K) ./ K) .- (plot_diff ? collect(1:K) ./ K : 0)
-
-    p = plot(
-        layer(x=1:K ./ K, y=y_values, color=["y" for _ in 1:K], Geom.step),
-        layer(x=1:K ./ K, y=lims.upper[2:end] ./ N .- (plot_diff ? 1:K ./ K : 0), color=["yrep" for _ in 1:K], Geom.step),
-        layer(x=1:K ./ K, y=lims.lower[2:end] ./ N .- (plot_diff ? 1:K ./ K : 0), color=["yrep" for _ in 1:K], Geom.step),
-        plot_theme,
-        Guide.ylabel(""),
-        Guide.xlabel(""),
-        Guide.xticks(ticks=nothing),
-        Coord.Cartesian(xmax=1)
-    )
-
+    p = plot(df,
+             x=:x,
+             y=:y,
+             color=:color,
+             layer(Geom.step, color="deepskyblue"),
+             layer(Geom.step, y=:lims_upper, color="red"),
+             layer(Geom.step, y=:lims_lower, color="red"),
+             Guide.ylabel(""),
+             Guide.xlabel(""),
+             Guide.xticks(ticks=nothing)
+             # Apply the color schemes here if available.
+             )
     return p
 end
+
 
 
 function ppc_pit_ecdf_grouped(y, yrep, group;
