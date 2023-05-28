@@ -3,7 +3,7 @@ using DataFrames
 using MeltArrays
 using LaTeXStrings
 
-include("ppc_helpers.jl")
+include("helpers/ppc_helpers.jl")
 
 
 function ppc_error_hist(y::Vector, yrep::Matrix; facet_args = Dict(), binwidth = nothing, breaks = nothing, freq = true)
