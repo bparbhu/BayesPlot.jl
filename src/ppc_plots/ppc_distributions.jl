@@ -125,7 +125,6 @@ end
 
 
 function ppc_dens(y, yrep;
-                  trim = false,
                   size = 0.5,
                   alpha = 1)
 
@@ -345,7 +344,6 @@ function ppc_pit_ecdf(y, yrep;
              )
     return p
 end
-
 
 
 function ppc_pit_ecdf_grouped(y, yrep, group;
