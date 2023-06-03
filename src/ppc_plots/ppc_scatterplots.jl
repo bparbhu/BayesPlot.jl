@@ -114,16 +114,18 @@ function scatter_aes(;kwargs...)
 end
 
 
-function scatter_avg_group_facets(;facet_args=Dict())
-    facet_args[:facets] = :group
-    facet_args[:scales] = get(facet_args, :scales, :free)
-    return layer(Facet.Grid(:group, scales=facet_args[:scales]), Theme(grid_line_width=1px, grid_color=colorant"gray"))
+function scatter_avg_group_facets(facet_args)
+    facet_args["facets"] = "group"
+    facet_args["scales"] = get(facet_args, "scales", "free")
+    return facet_wrap_parsed(facet_args)
 end
 
 
-function scatter_ref_line(ref_line=true; linetype=2, color=colorant"gray", kwargs...)
+function scatter_ref_line(ref_line; ,linetype=2, color=get_color("dh"), p::Plot)
     if !ref_line
-        return layer(Theme(grid_line_width=0px))
+        return Geom_ignore(p)
+    else
+        push!(p, layer(x=[0,1], y=[0,1], Geom.line, Theme(default_color=color, default_linestyle=linetype)))
     end
-    return layer(xintercept=[0,1], Geom.vline(color=color, style=linetype))
 end
+
