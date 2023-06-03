@@ -1,4 +1,6 @@
-using DataFrames, DataFramesMeta, Gadfly, Stan, Colors
+using DataFrames, DataFramesMeta, Gadfly, Stan, Colors, CategoricalArrays
+
+include("helpers/gadfly_helpers.jl")
 
 
 function ppc_scatter_data(y, yrep)
@@ -34,26 +36,41 @@ end
 
 
 function ppc_scatter(y, yrep; facet_args=Dict(), size=2.5, alpha=0.8, ref_line=true)
-    data = ppc_scatter_data(y, yrep)
-
-    if size(yrep, 1) == 1
-        facet_layer = Geom.blank()  # equivalent to geom_ignore()
+    data = ppc_scatter_data(y, yrep)  
+    
+    if nrow(yrep) == 1
+        facet_layer = Geom_ignore()
     else
         facet_args["facets"] = "rep_label"
-        facet_layer = Facet.wrap(; facet_args...)
+        facet_layer = facet_wrap_parsed(facet_args)
     end
 
-    scatter_plot = plot(data,
-        layer(x=:y_rep, y=:y_obs, color=:rep_label, Geom.point, Theme(point_size=size, point_alpha=alpha)),
-        layer(xintercept=[0], Geom.vline, Theme(line_width=1.5, default_color="gray"), show=ref_line),
-        Scale.color_discrete_manual("red"),
-        Theme(panel_stroke=colorant"gray"),
-        Coord.cartesian(fixed=true),
-        facet_layer,
-        Guide.xlabel("y_rep"), Guide.ylabel("y"),
-        Guide.xticks(ticks=nothing), Guide.yticks(ticks=nothing),
-        Guide.title(""))
-    return scatter_plot
+    p = plot(data,
+              layer(
+                x=:value, y=:value_rep,
+                color="yrep", fill="yrep",
+                Geom.point,
+                Theme(
+                  default_point_size=size, 
+                  alphas=[alpha],
+                  discrete_highlight_color=c->get_color_ppd(),
+                  discrete_highlight_fill=c->get_color_ppd()
+                ),
+                Coord.cartesian(fixed=true)
+              ),
+              Guide.xlabel(yrep_label()), Guide.ylabel(y_label()),
+              facet_layer,
+              force_axes_in_facets(), 
+              facet_text(false), 
+              legend_none(),
+              Theme(grid_line_width=0mm, key_position=:none)
+            )
+
+    if ref_line
+        push!(p, layer(x=:value, y=:value, Geom.line, Theme(default_color=colorant"darkgray")))
+    end
+
+    return p
 end
 
 
