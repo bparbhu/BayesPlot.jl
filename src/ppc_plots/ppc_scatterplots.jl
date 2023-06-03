@@ -96,11 +96,14 @@ function ppc_scatter_avg(y, yrep; size=2.5, alpha=0.8, ref_line=true, group=noth
 end
 
 
-function ppc_scatter_avg_grouped(y, yrep, group; size=2.5, alpha=0.8, ref_line=true, facet_args=Dict())
-    scatter_avg_plot = ppc_scatter_avg(y, yrep, size=size, alpha=alpha, ref_line=ref_line, group=group)
-    facet_layer = layer(Facet.Grid(group, orientation=:vertical, key=:group), Theme(grid_line_width=1px, grid_color=colorant"gray"))
+function ppc_scatter_avg_grouped(y, yrep, group; facet_args=Dict(), size=2.5, alpha=0.8, ref_line=true, p::Plot)
+    g = ppc_scatter_avg(y, yrep, group; size=size, alpha=alpha, ref_line=ref_line, p=p)
+
+    # Adding scatter_avg_group_facets and force_axes_in_facets to the plot
+    scatter_avg_group_facets(ref_line, facet_args; p=g)
+    force_axes_in_facets(p=g)
     
-    return scatter_avg_plot * facet_layer
+    return g
 end
 
 
