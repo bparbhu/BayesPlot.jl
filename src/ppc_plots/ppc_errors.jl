@@ -6,16 +6,34 @@ using LaTeXStrings
 include("helpers/ppc_helpers.jl")
 
 
-function ppc_error_hist(y::Vector, yrep::Matrix; facet_args = Dict(), binwidth = nothing, breaks = nothing, freq = true)
-    df = ppc_error_data(y, yrep)
-    p = Gadfly.plot(df,
-        x = :error,
-        Geom.histogram(binwidth = binwidth, breaks = breaks),
-        Guide.title("PPC Error Histogram"),
-        Guide.xlabel("Error (y - yrep)"),
-        Guide.ylabel("Frequency"))
+function ppc_error_hist(y, yrep; facet_args=Dict(), bincount=30, freq=true, p::Plot)
+
+    # Define data
+    data = ppc_error_data(y, yrep) 
+
+    # Determine if frequency or density should be displayed
+    freq == true ? Stat.histogram(bincount=bincount) : Stat.density()
+
+    # Add histogram layer to plot
+    push!(p, layer(
+        data,
+        x=:error, # assuming 'error' is the column containing the error data
+        Geom.histogram(bincount=bincount),
+        Theme(bar_fill=color("l"), key_color=color("lh")),
+        stat=stat
+    ))
+
+    # Modify axes and labels
+    push!(p, Guide.xlabel("Error"))
+    push!(p, dont_expand_y_axis(p=p))
+    push!(p, error_hist_facets(facet_args, grouped=false, ignore=nrow(yrep)==1, p=p))
+    push!(p, force_axes_in_facets(p=p))
+    push!(p, Guide.ylabel(nothing))
+    push!(p, Guide.yticks(ticks=nothing))
+
     return p
 end
+
 
 function ppc_error_hist_grouped(y::Vector, yrep::Matrix, group::Vector; facet_args = Dict(), binwidth = nothing, breaks = nothing, freq = true)
     df = ppc_error_data(y, yrep, group)
@@ -135,28 +153,26 @@ function compute_errors(y, yrep)
 end
 
 
-function error_hist_facets(facet_args;
-                           grouped::Bool = false,
-                           ignore::Bool = false,
-                           scales_default::String = "fixed")
+function error_hist_facets(facet_args; grouped=false, ignore=false, scales_default="fixed", p::Plot)
+
     if ignore
-        return Geom.nullgeom
+        return Geom_ignore(p=p)
     end
 
-    if grouped
-        facet_fun = "facet_grid"
-        facet_args["facets"] = @formula(rep_id ~ group)
-    else
-        facet_fun = "facet_wrap"
-        facet_args["facets"] = @formula(rep_id)
-    end
-    facet_args["scales"] = get(facet_args, "scales", scales_default)
+    # Defining layout function according to 'grouped' value
+    layout_fun = grouped ? (a, b) -> b .+ maximum(b)*a : (a, b) -> a
+    
+    # Extracting scales information
+    scales = get(facet_args, "scales", scales_default)
 
-    if facet_fun == "facet_grid"
-        return facet_grid(facet_args["facets"], scales = facet_args["scales"])
-    else
-        return facet_wrap(facet_args["facets"], scales = facet_args["scales"])
-    end
+    coord = scales == "fixed" ? Coord.cartesian() : nothing
+
+    # Adjusting plot with Geom.subplot_grid
+    push!(p, layer(
+        Geom.subplot_grid(layout_x=layout_fun, layout_y=layout_fun, coord=coord)
+    ))
+
+    return p
 end
 
 
