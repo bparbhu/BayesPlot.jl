@@ -2,9 +2,12 @@ using Gadfly
 using DataFrames
 using MeltArrays
 using LaTeXStrings
+using DataFramesMeta
 
+include("helpers/gadfly_helpers.jl")
 include("helpers/ppc_helpers.jl")
-
+include("helpers/helpers_shared.jl")
+include("example_data/example_data.jl")
 
 function ppc_error_hist(y, yrep; facet_args=Dict(), bincount=30, freq=true, p::Plot)
 
@@ -35,29 +38,30 @@ function ppc_error_hist(y, yrep; facet_args=Dict(), bincount=30, freq=true, p::P
 end
 
 
-function ppc_error_hist_grouped(y::Vector, yrep::Matrix, group::Vector; facet_args = Dict(), binwidth = nothing, breaks = nothing, freq = true)
-    df = ppc_error_data(y, yrep, group)
-    p = Gadfly.plot(df,
-        x = :error,
-        color = :group,
-        Geom.histogram(binwidth = binwidth, breaks = breaks),
-        Guide.title("PPC Error Histogram (Grouped)"),
-        Guide.xlabel("Error (y - yrep)"),
-        Guide.ylabel("Frequency"))
-    return p
+function ppc_error_hist_grouped(y, yrep, facet_args=Dict(), binwidth=nothing, breaks=nothing, freq=true)
+    g = ppc_error_hist(y, yrep; facet_args=facet_args, binwidth=binwidth, breaks=breaks, freq=freq)
+
+    # Here we use the `push!` function to add a layer to the plot
+    push!(g, error_hist_facets(facet_args, grouped=true))
+
+    push!(g, Guide.ylabel(nothing))  # Equivalent to theme(strip.text.y = element_blank())
+
+    return g
 end
 
-function ppc_error_scatter(y::Vector, yrep::Matrix; facet_args = Dict(), size = 2.5, alpha = 0.8)
-    df = ppc_error_data(y, yrep)
-    p = Gadfly.plot(df,
-        x = :y,
-        y = :error,
-        Geom.point(size = size, alpha = alpha),
-        Guide.title("PPC Error Scatter"),
-        Guide.xlabel("Y"),
-        Guide.ylabel("Error (y - yrep)"))
-    return p
+
+function ppc_error_scatter(y, yrep; facet_args = Dict(), size = 2.5, alpha = 0.8)
+    y = validate_y(y)
+    yrep = validate_predictions(yrep, length(y))
+    errors = compute_errors(y, yrep)
+    plot = ppc_scatter(y = y, yrep = errors, facet_args = facet_args, size = size, alpha = alpha, ref_line = false)
+
+    # Update the plot with new labels
+    push!(plot, Guide.xlabel(error_label()), Guide.ylabel(y_label()))
+
+    return plot
 end
+
 
 function ppc_error_scatter_avg(y::Vector, yrep::Matrix; size = 2.5, alpha = 0.8)
     df = ppc_error_data(y, yrep)
