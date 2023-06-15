@@ -1,6 +1,5 @@
 using Gadfly
 using DataFrames
-using MeltArrays
 using LaTeXStrings
 using DataFramesMeta
 
