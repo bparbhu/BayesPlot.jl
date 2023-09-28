@@ -1,8 +1,8 @@
 using DataFrames, DataFramesMeta, Gadfly
 include("ppc_plots/ppc_helpers.jl")
-include("helpers/bayesplot_helpers")
-include("helpers/bayesplot_gadfly_themes")
-include("helpers/gadfly_helper")
+include("helpers/bayesplot_helpers.jl")
+include("helpers/bayesplot_gadfly_themes.jl")
+include("helpers/gadfly_helper.jl")
 
 
 function ppd_data(ypred, group=nothing)
@@ -54,11 +54,7 @@ function ppd_ecdf_overlay(ypred;
                           alpha=0.7)
 
     data = ppd_data(ypred)
-
-    # Note: You will need to define the following custom functions in Julia:
-    # hline_at, stat_ecdf, scale_color_ppd, get_color, bayesplot_theme_get, 
-    # yaxis_title, xaxis_title, and legend_none
-
+    
     plot(data,
         x=:value,
         layer(hline_at([0, 0.5, 1],
